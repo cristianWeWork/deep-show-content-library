@@ -1,10 +1,12 @@
 from calendar import c
+from typing import Optional
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 import database.database as db
-from resource.tts import getVoicesList, getVoiceOptions
+import database.nonSqlDatabase as mongoDb
+from resource.tts import getVoicesList, getVoiceOptions, getAudioText
 app = FastAPI()
 
 origins = ["*"]
@@ -27,6 +29,23 @@ class loginUser(BaseModel):
     username:str
     password:str
 
+class itemToSpeech(BaseModel):
+    text:str
+    voice: str
+    language:str
+    format: Optional[str] = "wav"
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "voice": "es-CU-BelkysNeural",
+                    "text":"Muy buenas, Bienvenidos a los juegos del hambre",
+                    "language": "Spanish (Cuba)",
+                    "format": "ogg"
+                }
+            ]
+        }
+    }
 @app.get("/")
 async def root():
  return {"greeting":"Hello world"}
@@ -62,3 +81,30 @@ async def login(data: OAuth2PasswordRequestForm = Depends()):
 async def textToSpeech():
     return getVoiceOptions("Spanish")
 
+
+@app.post("/textToSpeech/")
+async def getTextToSpeech(item :itemToSpeech) :
+    
+    query = {
+        "voz": item.voice,
+        "text": item.text,
+        "format": item.format
+    }
+    result = mongoDb.find_document(query)
+    print(result)
+    
+    if result == None:
+        url_audio, id = await getAudioText(item.text, item.voice, item.language, item.format) # type: ignore
+        response = {
+            "url_audio" : url_audio,
+            "id" : id
+        }
+        return response
+    else:
+        
+        response = {
+            "url_audio" : result['url_audio'],
+            "id" : result['_id'],
+        }
+        return response
+         
