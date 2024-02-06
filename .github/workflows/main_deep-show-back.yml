@@ -64,4 +64,4 @@ jobs:
         with:
           app-name: 'deep-show-back'
           slot-name: 'Production'
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_461B03F4EB9F432DA32998F89B04B017 }}
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_94255AF908964EF2A961556EEBCEDD4C }}
