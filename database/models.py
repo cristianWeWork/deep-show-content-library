@@ -1,5 +1,6 @@
+from networkx import dfs_edges
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Date, create_engine, Sequence
+from sqlalchemy import Date, ForeignKey, create_engine, Sequence
 from sqlalchemy import String, Integer, Float, Boolean, Column
 from sqlalchemy.orm import sessionmaker
 
@@ -25,3 +26,10 @@ class users(Base):
         self.surname = surname
         self.subscription = subscription
         self.created_at = created_at
+        
+
+class shows(Base):
+    __tablename__='shows'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False )
+    

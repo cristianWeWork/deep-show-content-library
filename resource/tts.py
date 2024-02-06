@@ -58,7 +58,7 @@ async def getAudioText(text: str, voice: str, language: str, format: str ):
     aos = AudioOutputStream(None)
     speech_config = speechsdk.SpeechConfig(
         subscription=speechKey, region="westeurope")
-    print(format)
+    print("paso 5")
     if format == "mp3":
         file_name = "outputaudio.mp3"
     elif format == "ogg":
@@ -83,7 +83,7 @@ async def getAudioText(text: str, voice: str, language: str, format: str ):
         visemes.append({"audio_offsett": evt.audio_offset /
                        10000, "viseme_id": evt.viseme_id})
         blendShapes.append(evt.animation)
-
+        print("paso 6")
     speech_synthesizer.viseme_received.connect(viseme_cb)
     result = speech_synthesizer.speak_ssml_async(ssml).get()
     data = {
@@ -96,11 +96,12 @@ async def getAudioText(text: str, voice: str, language: str, format: str ):
         "visemes": visemes,
         "created_at": date
     }
-    
+    print("paso 7")
+    print(data)
     id = mongoDb.insert_document(data)
-    
+    print(id)
     url_audio =  blobf.upload_File(file_name, "{}.{}".format(id, format))
-    
+    print(url_audio)
     mongoDb.update_url_audio({"_id" : id}, {"url_audio": url_audio})
     
     return url_audio,  str(id)

@@ -84,7 +84,7 @@ async def textToSpeech():
 
 @app.post("/textToSpeech/")
 async def getTextToSpeech(item :itemToSpeech) :
-    
+    print("paso 1")
     query = {
         "voz": item.voice,
         "text": item.text,
@@ -94,6 +94,7 @@ async def getTextToSpeech(item :itemToSpeech) :
     print(result)
     
     if result == None:
+        print("paso 2")
         url_audio, id = await getAudioText(item.text, item.voice, item.language, item.format) # type: ignore
         response = {
             "url_audio" : url_audio,
@@ -101,7 +102,7 @@ async def getTextToSpeech(item :itemToSpeech) :
         }
         return response
     else:
-        
+        print("paso 3")
         response = {
             "url_audio" : result['url_audio'],
             "id" : result['_id'],

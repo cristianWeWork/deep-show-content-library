@@ -129,3 +129,4 @@ def session_clear(exception=None):
     session.rollback()
     if exception and Session.is_active:
         Session.rollback()
+

@@ -4,8 +4,8 @@ import os
 bbdd_conn = os.getenv('BBDD_MONGO')
 myclient = pymongo.MongoClient(bbdd_conn)
 
-mydb = myclient["WeWork"]
-collection = mydb["TTS_COLLECTION"]
+mydb = myclient["deep-show-db"]
+collection = mydb["tts_collection"]
 
 def showDBlist():
     print(myclient.list_database_names)
@@ -19,6 +19,8 @@ def insert_document(data):
 
 # Read (Leer)
 def find_document(query):
+    print("paso 4")
+    print(collection)
     result = collection.find_one(query, sort=[("_id", -1)])
     print (result)
     if result and "_id" in result:
