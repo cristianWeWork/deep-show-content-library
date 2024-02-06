@@ -22,6 +22,8 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
+TODAY = datetime.now()
+
 engine = sqlalchemy.create_engine(
     f'mssql+pymssql://{USERNAME}:{PASSWORD}@{SERVER}/{DATABASE}')
 Session = sessionmaker(bind=engine)
@@ -71,7 +73,7 @@ def get_password_hash(password):
 
 def register_new_user(username, password, email, name, surname):
     hashed_pass = get_password_hash(password)
-    new_user = users(username=username, password = hashed_pass, email = email, name = name, surname = surname)
+    new_user = users(username=username, password = hashed_pass, email = email, name = name, surname = surname, created_at=TODAY, subscription=1 )
     session.add(new_user)
     session.commit()
 
