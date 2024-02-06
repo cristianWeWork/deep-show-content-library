@@ -1,4 +1,4 @@
-import pyodbc
+
 from datetime import datetime, timedelta
 from typing import Annotated
 import os
