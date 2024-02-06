@@ -16,7 +16,7 @@ from .models import users
 
 SERVER = os.getenv('SERVER')
 DATABASE = os.getenv('DATABASE')
-USERNAME = os.getenv('USERNAME')
+USERNAME = os.getenv('USER')
 PASSWORD = os.getenv('PASSWORD')
 SECRET_KEY = os.getenv('SECRET_KEY')
 ALGORITHM = "HS256"
