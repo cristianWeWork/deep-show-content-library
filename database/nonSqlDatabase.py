@@ -19,7 +19,6 @@ def insert_document(data):
 
 # Read (Leer)
 def find_document(query):
-    print("paso 4")
     print(collection)
     result = collection.find_one(query, sort=[("_id", -1)])
     print (result)

@@ -104,7 +104,7 @@ async def getAudioText(text: str, voice: str, language: str, format: str ):
     print(url_audio)
     mongoDb.update_url_audio({"_id" : id}, {"url_audio": url_audio})
     
-    return url_audio,  str(id)
+    return url_audio,  str(id), visemes, blendShapes
 
 
 def ssmlCreator(text: str, voiceL: str):

@@ -95,10 +95,12 @@ async def getTextToSpeech(item :itemToSpeech) :
     
     if result == None:
         print("paso 2")
-        url_audio, id = await getAudioText(item.text, item.voice, item.language, item.format) # type: ignore
+        url_audio, id, visemes, blendShapes = await getAudioText(item.text, item.voice, item.language, item.format) # type: ignore
         response = {
             "url_audio" : url_audio,
-            "id" : id
+            "id" : id,
+            "visemes": visemes,
+            "blendShapes": blendShapes
         }
         return response
     else:
@@ -106,6 +108,8 @@ async def getTextToSpeech(item :itemToSpeech) :
         response = {
             "url_audio" : result['url_audio'],
             "id" : result['_id'],
+            "visemes": result['visemes'],
+            "blendShapes": result['blendShapes']
         }
         return response
          
