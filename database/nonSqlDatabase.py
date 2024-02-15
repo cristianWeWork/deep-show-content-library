@@ -1,3 +1,4 @@
+from turtle import back
 import pymongo
 import os
 
@@ -40,4 +41,21 @@ def update_url_audio(query, data):
 def delete_document(query):
     deleted_doc = collection.delete_one(query)
     return deleted_doc.deleted_count
+
+def insert_background(data):
+    collectionBkg = mydb["background_collection"]
+    inserted_doc = collectionBkg.insert_one(data)
+    print(f"Documento insertado con ID: {inserted_doc.inserted_id}")
+    return inserted_doc.inserted_id
+
+def getBackgrounds():
+    collectionBkg = mydb["background_collection"]
     
+    backgrounds_list = []
+    
+    for x in collectionBkg.find():
+       
+        x["_id"] = str(x["_id"])
+        backgrounds_list.append(x)
+        
+    return backgrounds_list

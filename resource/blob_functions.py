@@ -17,6 +17,15 @@ def upload_File(file, blob_name):
         blob_client.upload_blob(data, overwrite=True)
     return blob_client.url
 
+def upload_background(file, blob_name):
+    print("subiendo")
+    container_name =  "backgrounds-deepshow"
+    container_client = blob_service_client.get_container_client(container_name)
+    blob_client = container_client.get_blob_client(blob_name)
+    blob_client.upload_blob(file.file, overwrite=True)
+    return blob_client.url
+
+
 def upload_blob_directory(name):
     container_name = "emb-databases"
     container_client = blob_service_client.get_container_client(container_name)
