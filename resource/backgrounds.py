@@ -1,10 +1,4 @@
-import os
 from dotenv import load_dotenv
-import requests
-import azure.cognitiveservices.speech as speechsdk
-from azure.cognitiveservices.speech.audio import AudioOutputConfig, AudioOutputStream
-from dotenv import load_dotenv
-import datetime
 import database.nonSqlDatabase as mongoDb
 import resource.blob_functions as blobf
 load_dotenv()

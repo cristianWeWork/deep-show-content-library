@@ -1,4 +1,3 @@
-from calendar import c
 from typing import Optional
 from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
 from fastapi.security import OAuth2PasswordRequestForm
