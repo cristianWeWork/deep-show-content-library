@@ -12,7 +12,7 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from pydantic import BaseModel
 import pymssql
-from .models import users
+from .models import users, themes, graphics
 
 SERVER = os.getenv('SERVER')
 DATABASE = os.getenv('DATABASE')
@@ -47,10 +47,12 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
+
 def getUsers():
     usersList = session.query(users).all()
-    
+
     return usersList
+
 
 def getUser(userName):
     try:
@@ -63,28 +65,32 @@ def getUser(userName):
     except exc.NoResultFound as e:
         error = str(e.__dict__['orig'])
         return error
-    
+
 
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
 
+
 def get_password_hash(password):
     return pwd_context.hash(password)
 
+
 def register_new_user(username, password, email, name, surname):
     hashed_pass = get_password_hash(password)
-    new_user = users(username=username, password = hashed_pass, email = email, name = name, surname = surname, created_at=TODAY, subscription=1 )
+    new_user = users(username=username, password=hashed_pass, email=email,
+                     name=name, surname=surname, created_at=TODAY, subscription=1)
     session.add(new_user)
     session.commit()
 
     return {"message": "Usuario registrado correctamente"}
 
-def get_user_login( username: str, ):
-    stmt = session.query(users).where(users.username == username )
-    
+
+def get_user_login(username: str, ):
+    stmt = session.query(users).where(users.username == username)
+
     for user in session.scalars(stmt):
         return user
-        
+
 
 def authenticate_user(username: str, password: str):
     user = get_user_login(username)
@@ -94,9 +100,11 @@ def authenticate_user(username: str, password: str):
         return False
     return user
 
+
 def login_for_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()]
 ):
+    
     try:
         user = authenticate_user(form_data.username, form_data.password)
         if not user:
@@ -113,22 +121,33 @@ def login_for_access_token(
     except:
         session_clear()
 
+
 def create_access_token(data: dict, expires_delta: timedelta | None = None):
-        try:
-            to_encode = data.copy()
-            if expires_delta:
-                expire = datetime.utcnow() + expires_delta
-            else:
-                expire = datetime.utcnow() + timedelta(minutes=15)
-            to_encode.update({"exp": expire})
-            encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-            return encoded_jwt
-        except:
-            session_clear()
-            
-            
+    try:
+        to_encode = data.copy()
+        if expires_delta:
+            expire = datetime.utcnow() + expires_delta
+        else:
+            expire = datetime.utcnow() + timedelta(minutes=15)
+        to_encode.update({"exp": expire})
+        encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+        return encoded_jwt
+    except:
+        session_clear()
+
+
 def session_clear(exception=None):
     session.rollback()
     if exception and Session.is_active:
         Session.rollback()
 
+
+def AddTheme(name: str, preview: str, music_url: str):
+    new_theme = themes(name=name, preview=preview, music_url=music_url)
+    session.add(new_theme)
+    session.commit()
+    return {"message" : "Tema añadido correctamente"}
+
+def getThemes():
+    themesList = session.query(themes).join(graphics).options.all()
+    return themesList

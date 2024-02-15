@@ -1,5 +1,5 @@
 from typing import Optional
-from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
+from fastapi import Depends, FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
@@ -132,7 +132,20 @@ async def upload_background(image: UploadFile = File(...)):
     result = bkg.uploadBackgrounds(image)
     return result
 
+
 @app.get("/getBackgrounds/")
 async def getBackgrounds():
     result = bkg.getBackgrounds()
     return result
+
+
+@app.post("/addTheme")
+async def addTheme(name: str = Form(...), audio_file: UploadFile = File(...), image_file: UploadFile = File(...)):
+    result = bkg.uploadThemes(name, audio_file, image_file)
+    return result
+
+@app.get("/getThemes/")
+async def getThemes():
+    result = db.getThemes()
+    return result
+
