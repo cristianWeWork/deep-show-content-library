@@ -1,4 +1,3 @@
-
 from datetime import datetime, timedelta
 from typing import Annotated
 import os
@@ -14,18 +13,19 @@ from pydantic import BaseModel
 import pymssql
 from .models import users, themes, graphics
 
-SERVER = os.getenv('SERVER')
-DATABASE = os.getenv('DATABASE')
-USERNAME = os.getenv('USER')
-PASSWORD = os.getenv('PASSWORD')
-SECRET_KEY = os.getenv('SECRET_KEY')
+SERVER = os.getenv("SERVER")
+DATABASE = os.getenv("DATABASE")
+USERNAME = os.getenv("USERNAME")
+PASSWORD = os.getenv("PASSWORD")
+SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 TODAY = datetime.now()
 
 engine = sqlalchemy.create_engine(
-    f'mssql+pymssql://{USERNAME}:{PASSWORD}@{SERVER}/{DATABASE}')
+    f"mssql+pymssql://{USERNAME}:{PASSWORD}@{SERVER}/{DATABASE}"
+)
 Session = sessionmaker(bind=engine)
 session = Session()
 
@@ -61,9 +61,9 @@ def getUser(userName):
             for user in session.scalars(stmt):
                 return user
         else:
-            raise 'No se encuentra ese usuario, mi niño'
+            raise "No se encuentra ese usuario, mi niño"
     except exc.NoResultFound as e:
-        error = str(e.__dict__['orig'])
+        error = str(e.__dict__["orig"])
         return error
 
 
@@ -77,19 +77,31 @@ def get_password_hash(password):
 
 def register_new_user(username, password, email, name, surname):
     hashed_pass = get_password_hash(password)
-    new_user = users(username=username, password=hashed_pass, email=email,
-                     name=name, surname=surname, created_at=TODAY, subscription=1)
+    new_user = users(
+        username=username,
+        password=hashed_pass,
+        email=email,
+        name=name,
+        surname=surname,
+        created_at=TODAY,
+        subscription=1,
+    )
     session.add(new_user)
     session.commit()
 
     return {"message": "Usuario registrado correctamente"}
 
 
-def get_user_login(username: str, ):
-    stmt = session.query(users).where(users.username == username)
-
-    for user in session.scalars(stmt):
-        return user
+def get_user_login(
+    username: str,
+):
+    try:
+        stmt = session.query(users).where(users.username == username)
+        print(stmt)
+        for user in session.scalars(stmt):
+            return user
+    except:
+        session_clear()
 
 
 def authenticate_user(username: str, password: str):
@@ -101,10 +113,8 @@ def authenticate_user(username: str, password: str):
     return user
 
 
-def login_for_access_token(
-    form_data: Annotated[OAuth2PasswordRequestForm, Depends()]
-):
-    
+def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
+
     try:
         user = authenticate_user(form_data.username, form_data.password)
         if not user:
@@ -146,7 +156,8 @@ def AddTheme(name: str, preview: str, music_url: str):
     new_theme = themes(name=name, preview=preview, music_url=music_url)
     session.add(new_theme)
     session.commit()
-    return {"message" : "Tema añadido correctamente"}
+    return {"message": "Tema añadido correctamente"}
+
 
 def getThemes():
     themesList = session.query(themes).join(graphics).options.all()
