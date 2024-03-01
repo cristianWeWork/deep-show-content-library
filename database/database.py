@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from typing import Annotated
 import os
 import sqlalchemy
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, joinedload
 from sqlalchemy import exc
 from pydantic import BaseModel
 from fastapi import Depends, FastAPI, HTTPException, status
@@ -160,5 +160,14 @@ def AddTheme(name: str, preview: str, music_url: str):
 
 
 def getThemes():
-    themesList = session.query(themes).join(graphics).options.all()
+    themesList = session.query(themes).options(
+        joinedload(themes.graphics)).all()
+
     return themesList
+
+
+def addGraphics(theme_id: str, url: str, type: str):
+    new_grafic = graphics(theme_id=theme_id, url=url, type=type)
+    session.add(new_grafic)
+    session.commit()
+    return {"message": "grafico añadido correctamente"}

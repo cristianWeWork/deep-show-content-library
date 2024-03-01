@@ -149,3 +149,7 @@ async def getThemes():
     result = db.getThemes()
     return result
 
+@app.post("/addGraphics/")
+async def addGraphics(theme_id: str = Form(...), intro: UploadFile = File(...), end: UploadFile = File(...), lowerThird: UploadFile = File(...), transition: UploadFile = File(...)):
+    result = bkg.uploadGraphics(theme_id, intro, end,lowerThird, transition)
+    return result

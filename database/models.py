@@ -40,8 +40,8 @@ class themes(Base):
     __tablename__ = "themes"
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True)
-    preview = Column(String)
-    music_url = Column(String)
+    preview = Column(String(length=250))
+    music_url = Column(String(length=250))
     graphics = relationship("graphics", back_populates="themes")
 
     def _init__(self, name, preview, music_url):
