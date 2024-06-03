@@ -63,16 +63,16 @@ async def root():
 @app.get("/getUser")
 async def getUser(userName: str):
     try:
-        result = db.getUser(userName)
+        result = mongoDb.get_user(userName)
     except:
         raise HTTPException(
             status_code=404, detail='Problemas con la base de datos')
     user = {
-        "name": result.name,
-        "surname": result.surname,
-        "username": result.username,
-        "email": result.email,
-        "subscription": result.subscription
+        "name": result["name"],
+        "surname": result["surname"],
+        "username": result["username"],
+        "email": result["email"],
+        "subscription": result["subscription"]
     }
 
     return user
@@ -80,12 +80,12 @@ async def getUser(userName: str):
 
 @app.post("/register")
 async def registerUser(data: newUser):
-    return db.register_new_user(data.username, data.password, data.email, data.name, data.surname)
+    return mongoDb.register_new_user(data.username, data.password, data.email, data.name, data.surname)
 
 
 @app.post("/login")
 async def login(data: OAuth2PasswordRequestForm = Depends()):
-    return db.login_for_access_token(data)
+    return mongoDb.login_for_access_token(data)
 
 
 @app.get("/getVoicesList/")
@@ -146,7 +146,7 @@ async def addTheme(name: str = Form(...), audio_file: UploadFile = File(...), im
 
 @app.get("/getThemes/")
 async def getThemes():
-    result = db.getThemes()
+    result = mongoDb.get_themes()
     return result
 
 @app.post("/addGraphics/")

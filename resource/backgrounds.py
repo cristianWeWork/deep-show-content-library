@@ -35,22 +35,22 @@ def uploadThemes(name, audioFile, imageFile):
         "preview": url_preview,
         "name": name
     }
-    db.AddTheme(name, url_preview, url_sound)
+    mongoDb.add_theme(name, url_preview, url_sound)
 
 
 def uploadGraphics(id, introGraphic, endGraphic, lowerThirdGraphic, transitionGraphic):
     intro_filename = f"{id}_intro_{introGraphic.filename}"
     url_intro = blobf.upload_background(introGraphic, intro_filename)
-    db.addGraphics(id, url_intro, 'intro')
+    mongoDb.add_graphics(id, url_intro, 'intro')
 
     end_filename = f"{id}_end_{endGraphic.filename}"
     url_end = blobf.upload_background(endGraphic, end_filename)
-    db.addGraphics(id, url_end, 'end')
+    mongoDb.add_graphics(id, url_end, 'end')
 
     lower_third_filename = f"{id}_lower_third_{lowerThirdGraphic.filename}"
     url_lt = blobf.upload_background(lowerThirdGraphic, lower_third_filename)
-    db.addGraphics(id, url_lt, 'lower_third')
+    mongoDb.add_graphics(id, url_lt, 'lower_third')
 
     transition_filename = f"{id}_transition_{transitionGraphic.filename}"
     url_transition = blobf.upload_background(transitionGraphic, transition_filename)
-    db.addGraphics(id, url_transition, 'url_transition')
+    mongoDb.add_graphics(id, url_transition, 'url_transition')
