@@ -54,3 +54,16 @@ def uploadGraphics(id, introGraphic, endGraphic, lowerThirdGraphic, transitionGr
     transition_filename = f"{id}_transition_{transitionGraphic.filename}"
     url_transition = blobf.upload_background(transitionGraphic, transition_filename)
     mongoDb.add_graphics(id, url_transition, 'url_transition')
+    
+def uploadAvatars(name, jsonFile, gender, webmFile, imageFile):
+    intro_json = f"{name}_jsonFile_{jsonFile.filename}"
+    url_json = blobf.upload_background(jsonFile, intro_json)
+    
+    intro_webmFile = f"{name}_webmFile_{webmFile.filename}"
+    url_webm = blobf.upload_background(webmFile, intro_webmFile)
+    
+    intro_imageFile = f"{name}_imageFile_{imageFile.filename}"
+    url_image = blobf.upload_background(imageFile, intro_imageFile)
+    
+    result = mongoDb.add_avatars(name, url_image, url_json, url_webm, gender)
+    return result

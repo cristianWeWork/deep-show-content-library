@@ -144,12 +144,24 @@ async def addTheme(name: str = Form(...), audio_file: UploadFile = File(...), im
     result = bkg.uploadThemes(name, audio_file, image_file)
     return result
 
+
 @app.get("/getThemes/")
 async def getThemes():
     result = mongoDb.get_themes()
     return result
 
+
 @app.post("/addGraphics/")
 async def addGraphics(theme_id: str = Form(...), intro: UploadFile = File(...), end: UploadFile = File(...), lowerThird: UploadFile = File(...), transition: UploadFile = File(...)):
-    result = bkg.uploadGraphics(theme_id, intro, end,lowerThird, transition)
+    result = bkg.uploadGraphics(theme_id, intro, end, lowerThird, transition)
     return result
+
+
+@app.post("/addAvatar")
+async def addAvatar(name: str = Form(...), jsonFile: UploadFile = File(...), webmFile: UploadFile = File(...), imageFile: UploadFile = File(...), gender=Form(...),):
+    result = bkg.uploadAvatars(name, jsonFile, gender, webmFile, imageFile)
+    return result
+
+@app.get("/getAvatars")
+async def getAvatars():
+    return mongoDb.get_avatars()

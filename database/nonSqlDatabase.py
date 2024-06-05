@@ -25,6 +25,8 @@ graphics_collection = mydb["graphics"]
 subs_collection = mydb["subscription"]
 themes_collection = mydb["themes"]
 users_collection = mydb["users"]
+avatars_collection = mydb["avatars"]
+avatar_video_shot_collection = mydb["avatar_video_shot"]
 
 
 def showDBlist():
@@ -167,9 +169,9 @@ def add_theme(name: str, preview: str, music_url: str):
     ultimo_producto = list(graphics_collection.find().sort(
         [('_id', pymongo.DESCENDING)]).limit(1))
     ultimo_id = ultimo_producto[0]['id'] + 1
-    
+
     new_theme = {
-        "id":ultimo_id,
+        "id": ultimo_id,
         "name": name,
         "preview": preview,
         "music_url": music_url
@@ -183,8 +185,9 @@ def get_themes():
     for theme in themes_list:
         theme["_id"] = str(theme["_id"])
         theme["graphics"] = get_graphics_for_theme(theme["_id"])
-        
+
     return themes_list
+
 
 def get_graphics_for_theme(theme_id):
     graphics_list = list(graphics_collection.find({"theme_id": theme_id}))
@@ -192,6 +195,7 @@ def get_graphics_for_theme(theme_id):
         graphic["_id"] = str(graphic["_id"])
     print(graphics_list)
     return graphics_list
+
 
 def add_graphics(theme_id: str, url: str, graphic_type: str):
     new_graphic = {
@@ -201,6 +205,7 @@ def add_graphics(theme_id: str, url: str, graphic_type: str):
     }
     graphic_inserted = graphics_collection.insert_one(new_graphic)
     return {"message": f"Gráfico añadido correctamente con ID: {graphic_inserted.inserted_id}"}
+
 
 def get_user(username):
     try:
@@ -212,3 +217,66 @@ def get_user(username):
             raise Exception("No se encuentra ese usuario, mi niño")
     except Exception as e:
         return str(e)
+
+
+def add_user(theme_id: str, url: str, graphic_type: str):
+    new_graphic = {
+        "theme_id": theme_id,
+        "url": url,
+        "type": graphic_type
+    }
+    graphic_inserted = graphics_collection.insert_one(new_graphic)
+    return {"message": f"Gráfico añadido correctamente con ID: {graphic_inserted.inserted_id}"}
+
+avatars_collection.create_index([("id_avatar", pymongo.ASCENDING)])
+
+def add_avatars(name: str, url_img: str, url_json: str, url_webm: str, gender: str):
+  # Obtener el último ID insertado y autoincrementar
+    last_avatar = avatars_collection.find_one(sort=[("id_avatar", -1)])
+    new_id = last_avatar["id_avatar"] + 1 if last_avatar else 1
+
+    # Insertar en avatars_collection
+    new_avatar = {
+        "nombre": name,
+        "genero": gender,
+        "id_avatar": new_id
+    }
+    avatar_inserted = avatars_collection.insert_one(new_avatar)
+
+    # Insertar en avatar_video_shot_collection
+    new_avatar_video_shot = {
+        "url_img": url_img,
+        "url_json": url_json,
+        "url_video": url_webm,
+        "id_avatar": new_id
+    }
+    avatar_video_shot_collection.insert_one(new_avatar_video_shot)
+
+    return {"message": f"Avatar añadido correctamente con ID: {new_id}"}
+
+
+def get_avatars():
+    # Obtener todos los documentos de avatars_collection
+    avatars = avatars_collection.find()
+
+    # Crear una lista para almacenar los resultados combinados
+    combined_avatars = []
+
+    for avatar in avatars:
+        id_avatar = avatar.get("id_avatar")
+        
+        # Obtener los datos correspondientes de avatar_video_shot_collection
+        video_shot = avatar_video_shot_collection.find_one({"id_avatar": id_avatar})
+        
+        if video_shot:
+            combined_avatar = {
+                "nombre": avatar.get("nombre"),
+                "genero": avatar.get("genero"),
+                "id_avatar": id_avatar,
+                "url_img": video_shot.get("url_img"),
+                "url_json": video_shot.get("url_json"),
+                "url_video": video_shot.get("url_video")
+            }
+            combined_avatars.append(combined_avatar)
+
+    return combined_avatars

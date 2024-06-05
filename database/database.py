@@ -171,3 +171,4 @@ def addGraphics(theme_id: str, url: str, type: str):
     session.add(new_grafic)
     session.commit()
     return {"message": "grafico añadido correctamente"}
+
