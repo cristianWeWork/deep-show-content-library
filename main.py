@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 import database.database as db
 import database.nonSqlDatabase as mongoDb
+from resource import blob_functions
 import resource.backgrounds as bkg
 from resource.tts import getVoicesList, getVoiceOptions, getAudioText
 app = FastAPI()
@@ -165,3 +166,7 @@ async def addAvatar(name: str = Form(...), jsonFile: UploadFile = File(...), web
 @app.get("/getAvatars")
 async def getAvatars():
     return mongoDb.get_avatars()
+
+@app.post("/uploadFile/")
+async def postFile(name: str = Form(...), file: UploadFile = File(...),):
+    return bkg.uploadFile(name,file)
