@@ -1,5 +1,6 @@
 
 import os
+from typing import Any
 from dotenv import load_dotenv
 import requests
 import azure.cognitiveservices.speech as speechsdk
@@ -12,8 +13,9 @@ load_dotenv()
 
 load_dotenv()
 speechKey = os.getenv('SPEECHKEY')
-
+elevenKey = os.getenv("ELEVENKEY")
 date = datetime.datetime.now()
+
 
 def getVoicesList():
     requestUrl = "https://westeurope.tts.speech.microsoft.com/cognitiveservices/voices/list"
@@ -36,6 +38,7 @@ def getVoicesList():
     else:
         print("La solicitud no fue exitosa. Código de estado:", request.status_code)
 
+
 def getVoiceOptions(nationality: str):
     requestUrl = "https://westeurope.tts.speech.microsoft.com/cognitiveservices/voices/list"
     headers = {
@@ -44,7 +47,7 @@ def getVoiceOptions(nationality: str):
 
     }
     request: object = requests.get(requestUrl,  headers=headers)
-    
+
     if request.status_code == 200:
         response_data = request.json()
         resultados = [
@@ -54,7 +57,33 @@ def getVoiceOptions(nationality: str):
         print("La solicitud no fue exitosa. Código de estado:", request.status_code)
         return []
 
-async def getAudioText(text: str, voice: str, language: str, format: str ):
+
+def getVoiceOptionsEleven():
+    url = "https://api.elevenlabs.io/v1/voices"
+    headers = {"xi-api-key": elevenKey}
+
+    response = requests.get(url, headers=headers)
+    voices_data = response.json()
+
+    # Lista para almacenar los resultados procesados
+    filtered_voices = []
+
+    # Procesar cada voz y extraer solo los datos necesarios
+    for voice in voices_data['voices']:
+        filtered_voice = {
+            "voice_id": voice["voice_id"],
+            "name": voice["name"],
+            "age": voice["labels"].get("age", "Unknown"),  # Utiliza 'Unknown' si 'age' no está disponible
+            "accent": voice["labels"].get("accent", "Unknown"),  # Utiliza 'Unknown' si 'accent' no está disponible
+            "gender": voice["labels"].get("gender", "Unknown"),  # Utiliza 'Unknown' si 'gender' no está disponible
+            "preview_url": voice.get("preview_url", "")  # Devuelve cadena vacía si 'preview_url' no está disponible
+        }
+        filtered_voices.append(filtered_voice)
+
+    return filtered_voices
+
+
+async def getAudioText(text: str, voice: str, language: str, format: str):
     aos = AudioOutputStream(None)
     speech_config = speechsdk.SpeechConfig(
         subscription=speechKey, region="westeurope")
@@ -65,7 +94,7 @@ async def getAudioText(text: str, voice: str, language: str, format: str ):
         file_name = "outputaudio.ogg"
     else:
         file_name = "outputaudio.wav"
-    
+
     file_config = speechsdk.audio.AudioOutputConfig(
         filename=file_name)  # type: ignore
     speech_synthesizer = speechsdk.SpeechSynthesizer(
@@ -76,6 +105,7 @@ async def getAudioText(text: str, voice: str, language: str, format: str ):
     ssml = ssmlCreator(text, voice)
     blendShapes = []
     visemes = []
+
     def viseme_cb(evt):
         # print("Viseme event received: audio offset: {}ms, viseme id: {}.".format(
         #     evt.audio_offset / 10000, evt.viseme_id))
@@ -94,16 +124,17 @@ async def getAudioText(text: str, voice: str, language: str, format: str ):
         "url_audio": "",
         "blendShapes": blendShapes,
         "visemes": visemes,
-        "created_at": date
+        "created_at": date,
+        "provider":"Azure"
     }
     print("paso 7")
     print(data)
     id = mongoDb.insert_document(data)
     print(id)
-    url_audio =  blobf.upload_File(file_name, "{}.{}".format(id, format))
+    url_audio = blobf.upload_File(file_name, "{}.{}".format(id, format))
     print(url_audio)
-    mongoDb.update_url_audio({"_id" : id}, {"url_audio": url_audio})
-    
+    mongoDb.update_url_audio({"_id": id}, {"url_audio": url_audio})
+
     return url_audio,  str(id), visemes, blendShapes
 
 
@@ -114,3 +145,59 @@ def ssmlCreator(text: str, voiceL: str):
                {}
             </voice>
                 </speak>""".format(voiceL, text)
+
+async def getAudioTextEleven(text, voice_id, voiceSettings, format,name,eleven_model):
+    # Establecer el URL con el voice_id correcto
+    url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
+
+    # Configuración del encabezado con la API key adecuada
+    headers = {
+        "Accept": "audio/mpeg",
+        "Content-Type": "application/json",
+        "xi-api-key": elevenKey
+    }
+
+    # Datos para la solicitud
+    data = {
+        "text": text,
+        "model_id": eleven_model,
+        "voice_settings": voiceSettings
+    }
+
+    # Determinar el nombre del archivo basado en el formato deseado
+    file_name = f"outputaudio.{format}"
+    
+    # Realizar la petición POST
+    response = requests.post(url, json=data, headers=headers)
+    if response.status_code == 200:
+        with open(file_name, 'wb') as f:
+            for chunk in response.iter_content(chunk_size=1024):
+                if chunk:  # Filtro los keep-alive chunks
+                    f.write(chunk)
+    else:
+        print(f"Error: {response.status_code}")
+        return None
+
+    # Aquí agregamos el manejo de base de datos y almacenamiento, ejemplo con MongoDB y Azure Blob Storage
+    print("Guardando en la base de datos y almacenamiento en la nube...")
+    created_at = datetime.datetime.now()
+    # Suponemos una función para guardar en MongoDB
+    document_id = mongoDb.insert_document({
+        "voice_id": voice_id,
+        "voz":name,
+        "text": text,
+        "idioma": "es",  
+        "format": format,
+        "url_audio": "",
+        "created_at": created_at,
+        "provider":"ElevenLab"
+    })
+    
+    # Suponemos una función para subir el archivo a Blob Storage
+    url_audio = blobf.upload_File(file_name, f"{document_id}.{format}")
+    
+    # Actualizar la base de datos con la URL del audio
+    mongoDb.update_url_audio({"_id": document_id}, {"url_audio": url_audio})
+
+    return url_audio, str(document_id)
+

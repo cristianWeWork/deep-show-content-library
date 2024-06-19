@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Any, Optional
 from fastapi import Depends, FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel
@@ -7,7 +7,7 @@ import database.database as db
 import database.nonSqlDatabase as mongoDb
 from resource import blob_functions
 import resource.backgrounds as bkg
-from resource.tts import getVoicesList, getVoiceOptions, getAudioText
+from resource.tts import getAudioTextEleven, getVoiceOptionsEleven, getVoicesList, getVoiceOptions, getAudioText
 app = FastAPI()
 
 origins = ["*"]
@@ -52,6 +52,15 @@ class itemToSpeech(BaseModel):
     }
 
 
+class itemToSpeechEleven(BaseModel):
+    name: str
+    text: str
+    voice_id: str
+    model_id:str
+    voice_settings: Any
+    format: Optional[str] = "wav"
+
+
 class ImageUpload(BaseModel):
     image: UploadFile
 
@@ -94,6 +103,11 @@ async def textToSpeech():
     return getVoiceOptions("Spanish")
 
 
+@app.get("/getElevenVoicesList")
+async def getListVoices():
+    return getVoiceOptionsEleven()
+
+
 @app.post("/textToSpeech/")
 async def getTextToSpeech(item: itemToSpeech):
     print("paso 1")
@@ -123,6 +137,35 @@ async def getTextToSpeech(item: itemToSpeech):
             "id": result['_id'],
             "visemes": result['visemes'],
             "blendShapes": result['blendShapes']
+        }
+        return response
+
+
+@app.post("/textToSpeechEleven/")
+async def getTextToSpeechEleven(item: itemToSpeechEleven):
+    print("paso 1")
+    query = {
+        "voz": item.name,
+        "text": item.text,
+        "format": item.format
+    }
+    result = mongoDb.find_document(query)
+    print(result)
+
+    if result == None:
+        print("paso 2")
+        # type: ignore
+        url_audio, id = await getAudioTextEleven(item.text, item.voice_id, item.voice_settings, item.format, item.name, item.model_id)
+        response = {
+            "url_audio": url_audio,
+            "id": id,
+        }
+        return response
+    else:
+        print("paso 3")
+        response = {
+            "url_audio": result['url_audio'],
+            "id": result['_id'],
         }
         return response
 
@@ -163,10 +206,12 @@ async def addAvatar(name: str = Form(...), jsonFile: UploadFile = File(...), web
     result = bkg.uploadAvatars(name, jsonFile, gender, webmFile, imageFile)
     return result
 
+
 @app.get("/getAvatars")
 async def getAvatars():
     return mongoDb.get_avatars()
 
+
 @app.post("/uploadFile/")
 async def postFile(name: str = Form(...), file: UploadFile = File(...),):
-    return bkg.uploadFile(name,file)
+    return bkg.uploadFile(name, file)
