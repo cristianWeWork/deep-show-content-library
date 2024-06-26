@@ -1,4 +1,6 @@
 
+import base64
+import json
 import os
 from typing import Any
 from dotenv import load_dotenv
@@ -84,6 +86,7 @@ def getVoiceOptionsEleven():
 
 
 async def getAudioText(text: str, voice: str, language: str, format: str):
+    provider = "Azure"
     aos = AudioOutputStream(None)
     speech_config = speechsdk.SpeechConfig(
         subscription=speechKey, region="westeurope")
@@ -125,7 +128,7 @@ async def getAudioText(text: str, voice: str, language: str, format: str):
         "blendShapes": blendShapes,
         "visemes": visemes,
         "created_at": date,
-        "provider":"Azure"
+        "provider":provider
     }
     print("paso 7")
     print(data)
@@ -135,7 +138,7 @@ async def getAudioText(text: str, voice: str, language: str, format: str):
     print(url_audio)
     mongoDb.update_url_audio({"_id": id}, {"url_audio": url_audio})
 
-    return url_audio,  str(id), visemes, blendShapes
+    return url_audio,  str(id), visemes, blendShapes,provider
 
 
 def ssmlCreator(text: str, voiceL: str):
@@ -147,8 +150,9 @@ def ssmlCreator(text: str, voiceL: str):
                 </speak>""".format(voiceL, text)
 
 async def getAudioTextEleven(text, voice_id, voiceSettings, format,name,eleven_model):
+    provider = "ElevenLab"
     # Establecer el URL con el voice_id correcto
-    url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
+    url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}/with-timestamps"
 
     # Configuración del encabezado con la API key adecuada
     headers = {
@@ -169,11 +173,13 @@ async def getAudioTextEleven(text, voice_id, voiceSettings, format,name,eleven_m
     
     # Realizar la petición POST
     response = requests.post(url, json=data, headers=headers)
+    
     if response.status_code == 200:
+        json_string = response.content.decode("utf-8")
+        response_dict = json.loads(json_string)
+        audio_bytes = base64.b64decode(response_dict["audio_base64"])
         with open(file_name, 'wb') as f:
-            for chunk in response.iter_content(chunk_size=1024):
-                if chunk:  # Filtro los keep-alive chunks
-                    f.write(chunk)
+            f.write(audio_bytes)
     else:
         print(f"Error: {response.status_code}")
         return None
@@ -181,6 +187,11 @@ async def getAudioTextEleven(text, voice_id, voiceSettings, format,name,eleven_m
     # Aquí agregamos el manejo de base de datos y almacenamiento, ejemplo con MongoDB y Azure Blob Storage
     print("Guardando en la base de datos y almacenamiento en la nube...")
     created_at = datetime.datetime.now()
+    
+    #Parseito que parseo Visemas -> estandarizacion Azure
+    visemes = convert_eleven_labs_to_azure(response_dict["alignment"])
+    
+    
     # Suponemos una función para guardar en MongoDB
     document_id = mongoDb.insert_document({
         "voice_id": voice_id,
@@ -190,7 +201,8 @@ async def getAudioTextEleven(text, voice_id, voiceSettings, format,name,eleven_m
         "format": format,
         "url_audio": "",
         "created_at": created_at,
-        "provider":"ElevenLab"
+        "provider":provider,
+        "visemes": visemes
     })
     
     # Suponemos una función para subir el archivo a Blob Storage
@@ -199,5 +211,21 @@ async def getAudioTextEleven(text, voice_id, voiceSettings, format,name,eleven_m
     # Actualizar la base de datos con la URL del audio
     mongoDb.update_url_audio({"_id": document_id}, {"url_audio": url_audio})
 
-    return url_audio, str(document_id)
+    return url_audio, str(document_id),visemes,provider
 
+
+def convert_eleven_labs_to_azure(eleven_labs_data):
+    characters = eleven_labs_data['characters']
+    character_start_times_seconds = eleven_labs_data['character_start_times_seconds']
+    character_end_times_seconds = eleven_labs_data['character_end_times_seconds']
+
+    visemes = [
+        {
+            'audio_offset': start_time * 1000,  # Convertir a milisegundos
+            'char': char
+        }
+        for char, start_time in zip(characters, character_start_times_seconds)
+    ]
+
+    return visemes
+    
