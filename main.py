@@ -77,7 +77,7 @@ async def root():
     return {"greeting": "Hello world"}
 
 
-@app.get("/getUser")
+@app.get("/getUser/")
 async def getUser(userName: str):
     try:
         result = mongoDb.get_user(userName)
@@ -94,14 +94,14 @@ async def getUser(userName: str):
     return user
 
 
-@app.post("/register")
+@app.post("/register/")
 async def registerUser(data: newUser):
     return mongoDb.register_new_user(
         data.username, data.password, data.email, data.name, data.surname
     )
 
 
-@app.post("/login")
+@app.post("/login/")
 async def login(data: OAuth2PasswordRequestForm = Depends()):
     return mongoDb.login_for_access_token(data)
 
@@ -197,7 +197,7 @@ async def getBackgrounds():
     return result
 
 
-@app.post("/addTheme")
+@app.post("/addTheme/")
 async def addTheme(
     name: str = Form(...),
     audio_file: UploadFile = File(...),
@@ -225,7 +225,7 @@ async def addGraphics(
     return result
 
 
-@app.post("/addAvatar")
+@app.post("/addAvatar/")
 async def addAvatar(
     name: str = Form(...),
     jsonFile: UploadFile = File(...),
@@ -237,7 +237,7 @@ async def addAvatar(
     return result
 
 
-@app.get("/getAvatars")
+@app.get("/getAvatars/")
 async def getAvatars():
     return mongoDb.get_avatars()
 
