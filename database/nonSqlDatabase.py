@@ -27,7 +27,7 @@ themes_collection = mydb["themes"]
 users_collection = mydb["users"]
 avatars_collection = mydb["avatars"]
 avatar_video_shot_collection = mydb["avatar_video_shot"]
-
+shows_collection = mydb["shows"]
 
 def showDBlist():
     print(myclient.list_database_names)
@@ -166,9 +166,14 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
 
 
 def add_theme(name: str, preview: str, music_url: str):
-    ultimo_producto = list(graphics_collection.find().sort(
-        [('_id', pymongo.DESCENDING)]).limit(1))
-    ultimo_id = ultimo_producto[0]['id'] + 1
+    # Buscar el documento con el id más alto
+    ultimo_producto = themes_collection.find().sort("id", -1).limit(1)
+
+    ultimo_id = 1
+    for producto in ultimo_producto:
+        if 'id' in producto:
+            ultimo_id = producto['id'] + 1
+            break
 
     new_theme = {
         "id": ultimo_id,
@@ -176,8 +181,10 @@ def add_theme(name: str, preview: str, music_url: str):
         "preview": preview,
         "music_url": music_url
     }
-    theme_inserted = themes_collection.insert_one(new_theme)
-    return {"message": f"Tema añadido correctamente con ID: {theme_inserted.inserted_id}"}
+
+    themes_collection.insert_one(new_theme)
+    return {"message": f"Tema añadido correctamente con ID: {ultimo_id}"}
+
 
 
 def get_themes():
@@ -255,6 +262,30 @@ def add_avatars(name: str, url_img: str, url_json: str, url_webm: str, gender: s
     return {"message": f"Avatar añadido correctamente con ID: {new_id}"}
 
 
+def add_show(show_data):
+    # Obtener el último ID y autoincrementar
+    last_show = shows_collection.find_one(sort=[("id_show", -1)])
+    new_id = last_show["id_show"] + 1 if last_show else 1
+
+    # Preparar el documento con todos los campos del show
+    new_show = {
+        "id_show": new_id,
+        "user_id": show_data.userId,
+        "presenter_name": show_data.presenterName,
+        "voice": show_data.voice.dict(),  # Asumimos que es un modelo Pydantic
+        "id_avatar": show_data.avatar,
+        "id_graphics": show_data.graphics,
+        "texto": show_data.texto,
+        "id_background": show_data.background,
+        "url_show": show_data.url_show
+    }
+
+    # Insertar en la colección
+    shows_collection.insert_one(new_show)
+
+    return {"message": f"Show guardado correctamente con ID: {new_id}"}
+
+
 def get_avatars():
     # Obtener todos los documentos de avatars_collection
     avatars = avatars_collection.find()
@@ -280,3 +311,4 @@ def get_avatars():
             combined_avatars.append(combined_avatar)
 
     return combined_avatars
+

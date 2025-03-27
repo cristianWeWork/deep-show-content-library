@@ -70,6 +70,16 @@ def uploadAvatars(name, jsonFile, gender, webmFile, imageFile):
     result = mongoDb.add_avatars(name, url_image, url_json, url_webm, gender)
     return result
 
+def uploadShow(file):
+    # Generar nombre con la fecha actual
+    filename = datetime.now().strftime("%Y%m%d_%H%M%S") + "-show.webm"
+    url_show = blobf.upload_shows(file, filename)
+    print(url_show)
+    return url_show
+
+def addShow(show):
+    result = mongoDb.add_show(show) 
+    return result   
 
 def uploadFile(name, file):
     intro_json = f"{name}_file_{file.filename}"

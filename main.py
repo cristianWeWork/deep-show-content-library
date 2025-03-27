@@ -58,7 +58,24 @@ class itemToSpeech(BaseModel):
         }
     }
 
+class VoiceModel(BaseModel):
+    voice_id: str
+    name: str
+    age: str
+    accent: str
+    gender: str
+    preview_url: str
 
+class ShowEmittedModel(BaseModel):
+    userId: int
+    presenterName: str
+    voice: VoiceModel
+    avatar: int
+    graphics: int
+    texto: str
+    background: str
+    url_show: Optional[str] = None  
+    
 class itemToSpeechEleven(BaseModel):
     name: str
     text: str
@@ -84,6 +101,7 @@ async def getUser(userName: str):
     except:
         raise HTTPException(status_code=404, detail="Problemas con la base de datos")
     user = {
+        "id":result["id"],
         "name": result["name"],
         "surname": result["surname"],
         "username": result["username"],
@@ -190,7 +208,11 @@ async def upload_background(image: UploadFile = File(...)):
     result = bkg.uploadBackgrounds(image)
     return result
 
-
+@app.post("/upload_show/")
+async def upload_show(show: UploadFile = File(...)):
+    result = bkg.uploadShow(show)
+    return result
+    
 @app.get("/getBackgrounds/")
 async def getBackgrounds():
     result = bkg.getBackgrounds()
@@ -205,6 +227,14 @@ async def addTheme(
 ):
     result = bkg.uploadThemes(name, audio_file, image_file)
     return result
+
+
+@app.post("/addShow/")
+async def add_show(show: ShowEmittedModel):
+    # Aquí puedes guardar show.dict() en la base de datos o hacer lo que necesites
+    result = bkg.addShow(show)
+    
+    return {"message": "Show guardado correctamente", "data": result}
 
 
 @app.get("/getThemes/")
@@ -240,6 +270,12 @@ async def addAvatar(
 @app.get("/getAvatars/")
 async def getAvatars():
     return mongoDb.get_avatars()
+
+@app.post("/save_show/")
+async def add_show(show: ShowEmittedModel):
+    # Aquí puedes guardar show.dict() en la base de datos o hacer lo que necesites
+    result = bkg.addShow(show)
+    return {"message": "Show guardado correctamente", "data": result}
 
 
 @app.post("/uploadFile/")

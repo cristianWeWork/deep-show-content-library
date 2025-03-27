@@ -25,6 +25,14 @@ def upload_background(file, blob_name):
     blob_client.upload_blob(file.file, overwrite=True)
     return blob_client.url
 
+def upload_shows(file, blob_name):
+    print("subiendo")
+    container_name =  "shows-deepshow"
+    container_client = blob_service_client.get_container_client(container_name)
+    blob_client = container_client.get_blob_client(blob_name)
+    blob_client.upload_blob(file.file, overwrite=True)
+    return blob_client.url
+
 def upload_avatars(file, blob_name):
     print("subiendo")
     container_name =  "avatars-deepshow"
@@ -32,7 +40,6 @@ def upload_avatars(file, blob_name):
     blob_client = container_client.get_blob_client(blob_name)
     blob_client.upload_blob(file.file, overwrite=True)
     return blob_client.url
-
 
 
 def upload_blob_directory(name):
