@@ -284,3 +284,10 @@ async def postFile(
     file: UploadFile = File(...),
 ):
     return bkg.uploadFile(name, file)
+
+@app.get("/getShowsByUser/")
+async def GetShows(
+    user_id:int
+):
+    result = bkg.getShows(user_id)
+    return result

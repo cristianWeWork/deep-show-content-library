@@ -267,17 +267,20 @@ def add_show(show_data):
     last_show = shows_collection.find_one(sort=[("id_show", -1)])
     new_id = last_show["id_show"] + 1 if last_show else 1
 
-    # Preparar el documento con todos los campos del show
+    fecha_creacion = datetime.now().strftime("%d-%m-%Y")
+
+
     new_show = {
         "id_show": new_id,
         "user_id": show_data.userId,
         "presenter_name": show_data.presenterName,
-        "voice": show_data.voice.dict(),  # Asumimos que es un modelo Pydantic
+        "voice": show_data.voice.dict(),  
         "id_avatar": show_data.avatar,
         "id_graphics": show_data.graphics,
         "texto": show_data.texto,
         "id_background": show_data.background,
-        "url_show": show_data.url_show
+        "url_show": show_data.url_show,
+        "fecha_creacion": fecha_creacion
     }
 
     # Insertar en la colección
@@ -286,17 +289,16 @@ def add_show(show_data):
     return {"message": f"Show guardado correctamente con ID: {new_id}"}
 
 
+
 def get_avatars():
-    # Obtener todos los documentos de avatars_collection
+   
     avatars = avatars_collection.find()
 
-    # Crear una lista para almacenar los resultados combinados
+
     combined_avatars = []
 
     for avatar in avatars:
         id_avatar = avatar.get("id_avatar")
-        
-        # Obtener los datos correspondientes de avatar_video_shot_collection
         video_shot = avatar_video_shot_collection.find_one({"id_avatar": id_avatar})
         
         if video_shot:
@@ -312,3 +314,10 @@ def get_avatars():
 
     return combined_avatars
 
+def get_shows(user_id):
+    print(user_id)
+    shows = list(shows_collection.find({"user_id": user_id}))
+    for show in shows:
+        show["_id"] = str(show["_id"])
+
+    return shows

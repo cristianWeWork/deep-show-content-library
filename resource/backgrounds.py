@@ -85,3 +85,7 @@ def uploadFile(name, file):
     intro_json = f"{name}_file_{file.filename}"
     url_json = blobf.upload_background(file, intro_json)
     return url_json
+
+def getShows(user_id):
+    result = mongoDb.get_shows(user_id)
+    return result
