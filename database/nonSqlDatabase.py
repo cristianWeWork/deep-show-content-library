@@ -90,10 +90,24 @@ def getBackgrounds():
 
     return backgrounds_list
 
+def get_next_user_id():
+    # Obtener el último ID registrado
+    last_user = users_collection.find_one(sort=[("id", -1)])  # Encuentra el usuario con el mayor ID
+    if last_user:
+        return last_user["id"] + 1  # Incrementa el último ID en 1
+    else:
+        return 1  # Si no hay usuarios, el primer ID será 1
 
 def register_new_user(username, password, email, name, surname):
+    # Obtener el siguiente ID para el nuevo usuario
+    user_id = get_next_user_id()
+
+    # Hashear la contraseña
     hashed_pass = pwd_context.hash(password)
+
+    # Crear el nuevo usuario
     new_user = {
+        "id": user_id,  # ID auto-incremental
         "username": username,
         "password": hashed_pass,
         "email": email,
@@ -103,7 +117,9 @@ def register_new_user(username, password, email, name, surname):
         "subscription": 1,
     }
 
+    # Insertar el nuevo usuario en la colección
     usuario_inserted = users_collection.insert_one(new_user)
+    
     return {"message": f"Usuario insertado con id: {usuario_inserted.inserted_id}"}
 
 
