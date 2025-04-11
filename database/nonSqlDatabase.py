@@ -5,6 +5,7 @@ import os
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from passlib.context import CryptContext
+from bson import ObjectId
 from datetime import datetime, timedelta
 TODAY = datetime.now()
 SECRET_KEY = os.getenv("SECRET_KEY")
@@ -28,7 +29,7 @@ users_collection = mydb["users"]
 avatars_collection = mydb["avatars"]
 avatar_video_shot_collection = mydb["avatar_video_shot"]
 shows_collection = mydb["shows"]
-
+background_collection = mydb["background_collection"]
 def showDBlist():
     print(myclient.list_database_names)
     return myclient.list_database_names
@@ -330,10 +331,25 @@ def get_avatars():
 
     return combined_avatars
 
+
 def get_shows(user_id):
     print(user_id)
     shows = list(shows_collection.find({"user_id": user_id}))
+    
     for show in shows:
         show["_id"] = str(show["_id"])
+
+        # Obtener url_background desde background_collection
+        try:
+            background_id = ObjectId(show["id_background"])
+            background = background_collection.find_one({"_id": background_id})
+            show["url_background"] = background.get("url_background") if background else None
+        except Exception as e:
+            print(f"Error con id_background: {e}")
+            show["url_background"] = None
+
+        # Obtener url_img del avatar desde avatar_video_shot_collection
+        avatar = avatar_video_shot_collection.find_one({"id_avatar": show["id_avatar"]})
+        show["url_img_avatar"] = avatar.get("url_img") if avatar else None
 
     return shows
