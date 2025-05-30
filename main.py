@@ -2,6 +2,16 @@ from typing import Any, Optional
 from fastapi import Depends, FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel
+import os
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+from opentelemetry.instrumentation.logging import LoggingInstrumentor
+from opentelemetry.sdk.resources import Resource, SERVICE_NAME
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from azure.monitor.opentelemetry.exporter import AzureMonitorTraceExporter
+from opentelemetry import trace
+import logging
+from dotenv import load_dotenv
 from fastapi.middleware.cors import CORSMiddleware
 import database.database as db
 import database.nonSqlDatabase as mongoDb
@@ -15,6 +25,7 @@ from resource.tts import (
     getAudioText,
 )
 
+load_dotenv()
 app = FastAPI()
 
 origins = ["*"]
@@ -25,6 +36,27 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+connection_string = os.getenv("APPLICATIONINSIGHTS_CONNECTION_STRING")
+
+resource = Resource(attributes={SERVICE_NAME: "deep-show-fastapi"})
+
+trace.set_tracer_provider(TracerProvider(resource=resource))
+tracer = trace.get_tracer(__name__)
+
+trace.get_tracer_provider().add_span_processor(
+    BatchSpanProcessor(
+        AzureMonitorTraceExporter.from_connection_string(connection_string)
+    )
+)
+
+# Instrumentar logging (para logs que también irán a Application Insights)
+LoggingInstrumentor().instrument(set_logging_format=True)
+
+# Configurar logger estándar
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+FastAPIInstrumentor.instrument_app(app)
 
 
 class newUser(BaseModel):
@@ -58,6 +90,7 @@ class itemToSpeech(BaseModel):
         }
     }
 
+
 class VoiceModel(BaseModel):
     voice_id: str
     name: str
@@ -65,6 +98,7 @@ class VoiceModel(BaseModel):
     accent: str
     gender: str
     preview_url: str
+
 
 class ShowEmittedModel(BaseModel):
     userId: int
@@ -74,8 +108,9 @@ class ShowEmittedModel(BaseModel):
     graphics: int
     texto: str
     background: str
-    url_show: Optional[str] = None  
-    
+    url_show: Optional[str] = None
+
+
 class itemToSpeechEleven(BaseModel):
     name: str
     text: str
@@ -101,7 +136,7 @@ async def getUser(userName: str):
     except:
         raise HTTPException(status_code=404, detail="Problemas con la base de datos")
     user = {
-        "id":result["id"],
+        "id": result["id"],
         "name": result["name"],
         "surname": result["surname"],
         "username": result["username"],
@@ -208,11 +243,13 @@ async def upload_background(image: UploadFile = File(...)):
     result = bkg.uploadBackgrounds(image)
     return result
 
+
 @app.post("/upload_show/")
 async def upload_show(show: UploadFile = File(...)):
     result = bkg.uploadShow(show)
     return result
-    
+
+
 @app.get("/getBackgrounds/")
 async def getBackgrounds():
     result = bkg.getBackgrounds()
@@ -233,7 +270,7 @@ async def addTheme(
 async def add_show(show: ShowEmittedModel):
     # Aquí puedes guardar show.dict() en la base de datos o hacer lo que necesites
     result = bkg.addShow(show)
-    
+
     return {"message": "Show guardado correctamente", "data": result}
 
 
@@ -271,6 +308,7 @@ async def addAvatar(
 async def getAvatars():
     return mongoDb.get_avatars()
 
+
 @app.post("/save_show/")
 async def add_show(show: ShowEmittedModel):
     # Aquí puedes guardar show.dict() en la base de datos o hacer lo que necesites
@@ -285,9 +323,8 @@ async def postFile(
 ):
     return bkg.uploadFile(name, file)
 
+
 @app.get("/getShowsByUser/")
-async def GetShows(
-    user_id:int
-):
+async def GetShows(user_id: int):
     result = bkg.getShows(user_id)
     return result
