@@ -1,8 +1,8 @@
+import os
 from typing import Any, Optional
 from fastapi import Depends, FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel
-import os
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.instrumentation.logging import LoggingInstrumentor
 from opentelemetry.sdk.resources import Resource, SERVICE_NAME
@@ -25,6 +25,7 @@ from utils_resource.tts import (
 )
 
 load_dotenv()
+
 app = FastAPI()
 
 origins = ["*"]
