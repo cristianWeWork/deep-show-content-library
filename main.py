@@ -15,9 +15,8 @@ from dotenv import load_dotenv
 from fastapi.middleware.cors import CORSMiddleware
 import database.database as db
 import database.nonSqlDatabase as mongoDb
-from resource import blob_functions
-import resource.backgrounds as bkg
-from resource.tts import (
+import utils_resource.backgrounds as bkg
+from utils_resource.tts import (
     getAudioTextEleven,
     getVoiceOptionsEleven,
     getVoicesList,

@@ -1,0 +1,4 @@
+{
+    "appService.defaultWebAppToDeploy": "/subscriptions/578351a0-ae5e-46f3-acca-c2508e335bfd/resourceGroups/Deep-Show/providers/Microsoft.Web/sites/deep-show-back",
+    "appService.deploySubpath": "."
+}

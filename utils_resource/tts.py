@@ -9,7 +9,7 @@ from azure.cognitiveservices.speech.audio import AudioOutputConfig, AudioOutputS
 from dotenv import load_dotenv
 import datetime
 import database.nonSqlDatabase as mongoDb
-import resource.blob_functions as blobf
+import utils_resource.blob_functions as blobf
 
 load_dotenv()
 
