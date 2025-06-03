@@ -13,7 +13,6 @@ from opentelemetry import trace
 import logging
 from dotenv import load_dotenv
 from fastapi.middleware.cors import CORSMiddleware
-import database.database as db
 import database.nonSqlDatabase as mongoDb
 import utils_resource.backgrounds as bkg
 from utils_resource.tts import (

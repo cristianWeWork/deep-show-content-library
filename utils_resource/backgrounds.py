@@ -1,7 +1,6 @@
 from dotenv import load_dotenv
 import database.nonSqlDatabase as mongoDb
 import utils_resource.blob_functions as blobf
-import database.database as db
 from datetime import datetime
 
 fecha_actual = datetime.now()
