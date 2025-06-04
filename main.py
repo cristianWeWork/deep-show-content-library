@@ -111,7 +111,7 @@ class ShowEmittedModel(BaseModel):
 
 
 class itemToSpeechEleven(BaseModel):
-    name: str
+    name: Optional[str] =""
     text: str
     voice_id: str
     model_id: str
@@ -210,7 +210,7 @@ async def getTextToSpeechEleven(item: itemToSpeechEleven):
         span.set_attribute("app.text_snippet", item.text[:50])
         span.set_attribute("app.format", item.format)
 
-        query = {"voz": item.name, "text": item.text, "format": item.format}
+        query = {"voz": item.name, "text": item.text, "format": item.format, "voice_id":item.voice_id}
         result = mongoDb.find_document(query)
 
         if result is None:
