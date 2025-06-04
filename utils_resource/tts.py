@@ -10,7 +10,10 @@ from dotenv import load_dotenv
 import datetime
 import database.nonSqlDatabase as mongoDb
 import utils_resource.blob_functions as blobf
+from opentelemetry import trace
+from opentelemetry.trace.status import Status, StatusCode
 
+tracer = trace.get_tracer(__name__)
 load_dotenv()
 
 load_dotenv()
@@ -167,65 +170,73 @@ def ssmlCreator(text: str, voiceL: str):
 
 async def getAudioTextEleven(text, voice_id, voiceSettings, format, name, eleven_model):
     provider = "ElevenLab"
-    # Establecer el URL con el voice_id correcto
-    url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}/with-timestamps"
 
-    # Configuración del encabezado con la API key adecuada
-    headers = {
-        "Accept": "audio/mpeg",
-        "Content-Type": "application/json",
-        "xi-api-key": elevenKey,
-    }
+    with tracer.start_as_current_span("getAudioTextEleven") as span:
+        try:
+            span.set_attribute("tts.voice_id", voice_id)
+            span.set_attribute("tts.format", format)
+            span.set_attribute("tts.model_id", eleven_model)
+            span.set_attribute("tts.voice_name", name)
+            span.set_attribute("tts.text_snippet", text[:50])
 
-    # Datos para la solicitud
-    data = {"text": text, "model_id": eleven_model, "voice_settings": voiceSettings}
+            url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}/with-timestamps"
+            headers = {
+                "Accept": "audio/mpeg",
+                "Content-Type": "application/json",
+                "xi-api-key": elevenKey,
+            }
+            data = {"text": text, "model_id": eleven_model, "voice_settings": voiceSettings}
+            file_name = f"outputaudio.{format}"
 
-    # Determinar el nombre del archivo basado en el formato deseado
-    file_name = f"outputaudio.{format}"
+            span.add_event("Enviando solicitud a ElevenLabs")
+            response = requests.post(url, json=data, headers=headers)
 
-    # Realizar la petición POST
-    response = requests.post(url, json=data, headers=headers)
+            if response.status_code != 200:
+                span.set_status(Status(StatusCode.ERROR, f"HTTP {response.status_code}"))
+                span.add_event("Falló la solicitud a ElevenLabs")
+                print(f"Error: {response.status_code}")
+                return None
 
-    if response.status_code == 200:
-        json_string = response.content.decode("utf-8")
-        response_dict = json.loads(json_string)
-        audio_bytes = base64.b64decode(response_dict["audio_base64"])
-        with open(file_name, "wb") as f:
-            f.write(audio_bytes)
-    else:
-        print(f"Error: {response.status_code}")
-        return None
+            json_string = response.content.decode("utf-8")
+            response_dict = json.loads(json_string)
 
-    # Aquí agregamos el manejo de base de datos y almacenamiento, ejemplo con MongoDB y Azure Blob Storage
-    print("Guardando en la base de datos y almacenamiento en la nube...")
-    created_at = datetime.datetime.now()
+            span.add_event("Audio recibido de ElevenLabs")
 
-    # Parseito que parseo Visemas -> estandarizacion Azure
-    visemes = convert_eleven_labs_to_azure(response_dict["alignment"])
+            audio_bytes = base64.b64decode(response_dict["audio_base64"])
+            with open(file_name, "wb") as f:
+                f.write(audio_bytes)
 
-    # Suponemos una función para guardar en MongoDB
-    document_id = mongoDb.insert_document(
-        {
-            "voice_id": voice_id,
-            "voz": name,
-            "text": text,
-            "idioma": "es",
-            "format": format,
-            "url_audio": "",
-            "created_at": created_at,
-            "provider": provider,
-            "visemes": visemes,
-        }
-    )
+            created_at = datetime.datetime.now()
+            visemes = convert_eleven_labs_to_azure(response_dict["alignment"])
 
-    # Suponemos una función para subir el archivo a Blob Storage
-    url_audio = blobf.upload_File(file_name, f"{document_id}.{format}")
+            span.add_event("Guardando en MongoDB")
+            document_id = mongoDb.insert_document(
+                {
+                    "voice_id": voice_id,
+                    "voz": name,
+                    "text": text,
+                    "idioma": "es",
+                    "format": format,
+                    "url_audio": "",
+                    "created_at": created_at,
+                    "provider": provider,
+                    "visemes": visemes,
+                }
+            )
 
-    # Actualizar la base de datos con la URL del audio
-    mongoDb.update_url_audio({"_id": document_id}, {"url_audio": url_audio})
+            span.add_event("Subiendo a Azure Blob Storage")
+            url_audio = blobf.upload_File(file_name, f"{document_id}.{format}")
 
-    return url_audio, str(document_id), visemes, provider
+            span.add_event("Actualizando MongoDB con la URL")
+            mongoDb.update_url_audio({"_id": document_id}, {"url_audio": url_audio})
 
+            span.set_status(Status(StatusCode.OK))
+            return url_audio, str(document_id), visemes, provider
+
+        except Exception as e:
+            span.set_status(Status(StatusCode.ERROR, str(e)))
+            span.add_event("Excepción capturada en getAudioTextEleven")
+            raise
 
 def convert_eleven_labs_to_azure(eleven_labs_data):
     characters = eleven_labs_data["characters"]
