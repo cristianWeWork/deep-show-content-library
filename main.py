@@ -38,7 +38,7 @@ app.add_middleware(
 
 connection_string = os.getenv("APPLICATIONINSIGHTS_CONNECTION_STRING")
 
-resource = Resource(attributes={SERVICE_NAME: "deep-show-fastapi"})
+resource = Resource(attributes={SERVICE_NAME: "deep-show-back"})
 
 trace.set_tracer_provider(TracerProvider(resource=resource))
 tracer = trace.get_tracer(__name__)
@@ -200,40 +200,44 @@ async def getTextToSpeech(item: itemToSpeech):
         return response
 
 
+
 @app.post("/textToSpeechEleven/")
 async def getTextToSpeechEleven(item: itemToSpeechEleven):
-    print("paso 1")
-    query = {"voz": item.name, "text": item.text, "format": item.format}
-    result = mongoDb.find_document(query)
-    print(result)
+    tracer = trace.get_tracer(__name__)
 
-    if result == None:
-        print("paso 2")
-        # type: ignore
-        url_audio, document_id, visemes, provider = await getAudioTextEleven(
-            item.text,
-            item.voice_id,
-            item.voice_settings,
-            item.format,
-            item.name,
-            item.model_id,
-        )
-        response = {
-            "url_audio": url_audio,
-            "id": document_id,
-            "visemes": visemes,
-            "provider": provider,
-        }
-        return response
-    else:
-        print("paso 3")
-        response = {
-            "url_audio": result["url_audio"],
-            "id": result["_id"],
-            "visemes": result["visemes"],
-            "provider": result["provider"],
-        }
-        return response
+    with tracer.start_as_current_span("textToSpeechEleven Handler") as span:
+        span.set_attribute("app.voice_name", item.name)
+        span.set_attribute("app.text_snippet", item.text[:50])
+        span.set_attribute("app.format", item.format)
+
+        query = {"voz": item.name, "text": item.text, "format": item.format}
+        result = mongoDb.find_document(query)
+
+        if result is None:
+            span.add_event("Audio not in DB. Calling ElevenLabs.")
+            url_audio, document_id, visemes, provider = await getAudioTextEleven(
+                item.text,
+                item.voice_id,
+                item.voice_settings,
+                item.format,
+                item.name,
+                item.model_id,
+            )
+
+            return {
+                "url_audio": url_audio,
+                "id": document_id,
+                "visemes": visemes,
+                "provider": provider,
+            }
+        else:
+            span.add_event("Audio found in DB.")
+            return {
+                "url_audio": result["url_audio"],
+                "id": result["_id"],
+                "visemes": result["visemes"],
+                "provider": result["provider"],
+            }
 
 
 @app.post("/upload_background/")
